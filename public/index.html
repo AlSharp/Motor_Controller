@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+  <style>
+    .form-group {
+      display: block;
+      margin-top: 15px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .response {
+      display: block;
+      width: 390px;
+      margin-top: 15px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+  <title>Motor Controller</title>
+</head>
+<body>
+  <div class="container">
+    <h1 style="text-align: center">Motor Controller</h1>
+    <form class="form-inline">
+      <div class="form-group">
+        <label for="timing">ASCII Command</label>
+        <input type="text" id="command" class="form-control mx-sm-2" placeholder="s r0x24 31">
+        <input type="button" id="submit-command" class="btn btn-primary" value="Send">
+      </div> 
+    </form>
+    <div class="response">
+      <div style="float: left; margin-right: 6px;">Response:</div>
+      <div id="response" style="float: left"></div>
+    </div>
+  </div>
+  
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    const responseText = document.getElementById('response');
+    
+    //Handle motor response
+    socket.on('response', function(data) {
+      console.log('response recieved! ', data);
+      responseText.textContent = data;
+    })
+
+    const submitCommand = document.getElementById('submit-command');
+    
+    // Send ASCII Command to motor
+    submitCommand.addEventListener('click', function() {
+      console.log('send');
+        const data = document.getElementById('command').value;
+        socket.emit('command', data);
+    });
+
+    //Prevent form submission on hitting Enter key
+    document.querySelector('form').onkeypress = function(e) {
+      var key = e.charCode || e.keyCode || 0;
+      if (key == 13) {
+        e.preventDefault();
+      }
+    }
+  </script>
+</body>
+</html>
