@@ -240,7 +240,8 @@
     function decrementNumberOfBlocks() {
       numberOfBlocks = numberOfBlocks - 1;
     }
-
+    
+    // remove all blocks
     clearAll.addEventListener('click', function() {
       const blockContainer = document.querySelector('.block-container');
       while (blockContainer.firstChild) {
@@ -248,6 +249,12 @@
       }
       numberOfBlocks = 0;
     });
+
+    //send blocks to run on the server
+    run.addEventListener('click', function() {
+      const data = 'blocks blocks';
+      socket.emit('blocks', data);
+    })
 
   </script>
 </body>

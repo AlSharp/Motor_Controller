@@ -43,7 +43,10 @@ io.on('connection', function(socket) {
     console.log('ASCII command recieved!');
     motor.write(toAscii(data));
   })
-})
+  socket.on('blocks', function(data) {
+    console.log('blocks: ', data);
+  });
+});
 
 function toAscii(str) {
   var arr =[];
