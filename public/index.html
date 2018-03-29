@@ -4,40 +4,139 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
   <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
   <style>
-    .form-group {
-      display: block;
-      margin-top: 15px;
-      margin-left: auto;
-      margin-right: auto;
+    html {
+      font-size: 0.875rem;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
     }
 
-    .response {
-      display: block;
-      width: 390px;
-      margin-top: 15px;
+    .card {
+      width: 600px;
+      margin-top: 20px;
       margin-left: auto;
       margin-right: auto;
+      background-color: #C7D6D5;
     }
+    
+    .block-container {
+      width: 600px;
+      margin-top: 20px;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 10px;
+      overflow: auto;
+    }
+
+    .block {
+      float: left;
+      width: 120px;
+      height: 120px;
+      margin: 10px;
+      padding: 6px;
+      border: 1px solid;
+      font-size: 0.625rem;
+    }
+
+    .block > h6 {
+      margin-bottom: 2px;
+    }
+
+    .block-parameter-group {
+      width: 100%;
+    }
+    
+    .block-parameter-label {
+      width: 9px;
+      margin-right: 4px;
+    }
+
+    .block-parameter-input {
+      width: 90px;
+      /* float: right; */
+    }
+
+    .footer {
+      width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 20px;
+    }
+
   </style>
   <title>Motor Controller</title>
 </head>
 <body>
-  <div class="container">
-    <h1 style="text-align: center">Motor Controller</h1>
-    <form class="form-inline">
-      <div class="form-group">
-        <label for="timing">ASCII Command</label>
-        <input type="text" id="command" class="form-control mx-sm-2" placeholder="s r0x24 31">
-        <input type="button" id="submit-command" class="btn btn-primary" value="Send">
-      </div> 
-    </form>
-    <div class="response">
-      <div style="float: left; margin-right: 6px;">Response:</div>
-      <div id="response" style="float: left"></div>
+  <!-- GUI -->
+  <div class="card">
+    <div class="card-body">
+      <h2 class="text-center mb-3">Motor Controller</h1>
+      <form id="command-line">
+        <div class="form-group row">
+          <label for="command" class="col-sm-4 col-form-label">ASCII Command</label>
+          <div class="col-sm-5">
+            <input type="text" id="command" class="form-control" placeholder="s r0x24 31">
+          </div>
+          <div class="col-sm-3">
+            <input type="button" id="submit-command" class="btn btn-primary" value="Send">
+          </div>
+        </div> 
+      </form>
+      <div class="row mb-3">
+        <div class="col-sm-4">Response:</div>
+        <div id="response" class="col-sm-8"></div>
+      </div>
+      <hr>
+      <form id="block-creator">
+        <div class="form-group row">
+          <label for="position" class="col-sm-4 col-form-label">Position</label>
+          <div class="col-sm-5">
+            <input type="text" id="position" class="form-control" placeholder="100000">
+          </div>
+          <label class="col-sm-3 col-form-label">counts</label>
+        </div>
+        <div class="form-group row">
+          <label for="velocity" class="col-sm-4 col-form-label">Velocity</label>
+          <div class="col-sm-5">
+            <input type="text" id="velocity" class="form-control" placeholder="100000">
+          </div>
+          <label class="col-sm-3 col-form-label">0.1xcounts/sec</label>
+        </div>
+        <div class="form-group row">
+          <label for="acceleration" class="col-sm-4 col-form-label">Acceleration</label>
+          <div class="col-sm-5">
+            <input type="text" id="acceleration" class="form-control" placeholder="100000">
+          </div>
+          <label class="col-sm-3 col-form-label">10xcounts/sec<sup>2</sup></label>
+        </div>
+        <div class="form-group row">
+          <label for="interval" class="col-sm-4 col-form-label">Interval</label>
+          <div class="col-sm-5">
+            <input type="text" id="interval" class="form-control" placeholder="1000">
+          </div>
+          <label class="col-sm-3 col-form-label">sec</label>
+        </div>
+        <div class="form-check mb-3 col-sm-4">
+          <input type="checkbox" id="wait-until-done" class="form-check-input" onchange="disableInterval(this)">
+          <label for="wait-until-done" class="form-check-label">Wait until done</label>
+        </div>
+        <input type="button" id="create-block" class="btn btn-primary" value="Create"/>
+      </form>
     </div>
+  </div>
+  <!-- blocks -->
+  <div class="block-container">
+  </div>
+  <!-- Run -->
+  <div class="footer">
+    <button id="clear-all" class="btn btn-dark btn-block">Clear all</button>
+    <button id="run" class="btn btn-success btn-block">Run</button>
   </div>
   
   <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
@@ -47,15 +146,25 @@
   <script>
     const socket = io();
 
+    var numberOfBlocks = 0;
+
+    //UI
+    const submitCommand = document.getElementById('submit-command');
     const responseText = document.getElementById('response');
+    const positionInput = document.getElementById('position');
+    const velocityInput = document.getElementById('velocity');
+    const accelerationInput = document.getElementById('acceleration');
+    const waitUntilDone = document.getElementById('wait-until-done');
+    const intervalInput = document.getElementById('interval');
+    const createBlock = document.getElementById('create-block');
+    const clearAll = document.getElementById('clear-all');
+    const run = document.getElementById('run');
     
     //Handle motor response
     socket.on('response', function(data) {
       console.log('response recieved! ', data);
       responseText.textContent = data;
     })
-
-    const submitCommand = document.getElementById('submit-command');
     
     // Send ASCII Command to motor
     submitCommand.addEventListener('click', function() {
@@ -64,13 +173,82 @@
         socket.emit('command', data);
     });
 
-    //Prevent form submission on hitting Enter key
-    document.querySelector('form').onkeypress = function(e) {
+    //Prevent forms submission on hitting Enter key
+    document.getElementById('command-line').onkeypress = function(e) {
       var key = e.charCode || e.keyCode || 0;
       if (key == 13) {
         e.preventDefault();
       }
     }
+
+    document.getElementById('block-creator').onkeypress = function(e) {
+      var key = e.charCode || e.keyCode || 0;
+      if (key == 13) {
+        e.preventDefault();
+      }
+    }
+
+    //Disable Interval if check wait until done
+    function disableInterval() {
+      if (!intervalInput.disabled) {
+        intervalInput.disabled = true;
+      } else {
+        intervalInput.disabled = false;
+      }
+    }
+
+    createBlock.addEventListener('click', function() {
+      console.log('creating new block...');
+      //find container to input our blocks
+      const blockContainer = document.querySelector('.block-container');
+      
+      //create new block
+      const block = document.createElement('div');
+      block.className = 'block';
+      block.id = `block-${numberOfBlocks + 1}`;
+      block.innerHTML = `
+      <h6>Move</h6>
+      <div class="block-parameter-group">
+        <label for="p" class="block-parameter-label">P:</label>
+        <input type="text" class="block-parameter-input" value="${ positionInput.value }">
+      </div>
+      <div class="block-parameter-group">
+        <label for="v" class="block-parameter-label">V:</label>
+        <input type="text" class="block-parameter-input" value="${ velocityInput.value }">
+      </div>
+      <div class="block-parameter-group">
+        <label for="a" class="block-parameter-label">A:</label>
+        <input type="text" class="block-parameter-input" value="${ accelerationInput.value }">
+      </div>
+      <div class="block-parameter-group">
+        <label for="i" class="block-parameter-label">I:</label>
+        
+        <input type="text" class="block-parameter-input" value="${ intervalInput.disabled ? 'done' : intervalInput.value }">
+      </div>
+      `;
+
+      //append block
+      blockContainer.appendChild(block);
+
+      incrementNumberOfBlocks();
+    });
+
+    function incrementNumberOfBlocks() {
+      numberOfBlocks = numberOfBlocks + 1;
+    }
+
+    function decrementNumberOfBlocks() {
+      numberOfBlocks = numberOfBlocks - 1;
+    }
+
+    clearAll.addEventListener('click', function() {
+      const blockContainer = document.querySelector('.block-container');
+      while (blockContainer.firstChild) {
+        blockContainer.removeChild(blockContainer.firstChild);
+      }
+      numberOfBlocks = 0;
+    });
+
   </script>
 </body>
 </html>

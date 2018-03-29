@@ -32,16 +32,16 @@ function handler (req, res) { //create server
   });
 }
 
+const parser = motor.pipe(new Readline({ delimiter: '\r' }))
+parser.on('data', function(data) {
+  console.log(data);
+  io.sockets.emit('response', data);
+});
+
 io.on('connection', function(socket) {
-  var command = '';
   socket.on('command', function(data) {
     console.log('ASCII command recieved!');
-    const parser = motor.pipe(new Readline({ delimiter: '\r' }))
-    parser.on('data', function(data) {
-      socket.emit('response', data);
-    });
-    command = data;
-    motor.write(toAscii(command));
+    motor.write(toAscii(data));
   })
 })
 
