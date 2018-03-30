@@ -32,9 +32,12 @@ function handler (req, res) { //create server
   });
 }
 
+var motorResponse = '';
+
 const parser = motor.pipe(new Readline({ delimiter: '\r' }))
 parser.on('data', function(data) {
   console.log(data);
+  motorResponse = data;
   io.sockets.emit('response', data);
 });
 
@@ -44,7 +47,11 @@ io.on('connection', function(socket) {
     motor.write(toAscii(data));
   })
   socket.on('blocks', function(data) {
-    console.log('blocks: ', data);
+    init();
+    
+    for (i = 0; i < data.length; i++) {
+      console.log(data[i]);
+    }
   });
 });
 
@@ -55,4 +62,18 @@ function toAscii(str) {
   }
   arr.push(13);
   return arr;
+}
+
+function init() {
+  const array = ['s r0x24 0', 's r0x24 31', 's r0xc8 256'];
+  for (i = 0; i < array.length; i++) {
+    doAscii(array, i);
+  }
+}
+
+function doAscii(array, i) {
+  setTimeout(function() {
+    motor.write(toAscii(array[i]));
+    console.log(array[i]);
+  }, 1000*i);
 }

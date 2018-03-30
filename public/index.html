@@ -131,8 +131,10 @@
     </div>
   </div>
   <!-- blocks -->
-  <div class="block-container">
-  </div>
+  <!-- don't put space between divs 
+    any space generates childnode
+    we need 0 if no children here -->
+  <div class="block-container"></div> 
   <!-- Run -->
   <div class="footer">
     <button id="clear-all" class="btn btn-dark btn-block">Clear all</button>
@@ -205,7 +207,7 @@
       //create new block
       const block = document.createElement('div');
       block.className = 'block';
-      block.id = `block-${numberOfBlocks + 1}`;
+      block.id = `move-${numberOfBlocks + 1}`;
       block.innerHTML = `
       <h6>Move</h6>
       <div class="block-parameter-group">
@@ -252,9 +254,47 @@
 
     //send blocks to run on the server
     run.addEventListener('click', function() {
-      const data = 'blocks blocks';
-      socket.emit('blocks', data);
-    })
+      const data = [];
+      const blockContainer = document.querySelector('.block-container');
+      if (blockContainer.childNodes.length !== 0) {
+        for (i = 0; i < blockContainer.children.length; i++) {
+          let block = {};
+          // command: 'move'
+          block.command = blockContainer.children[i].id.slice(0,4);
+
+          // position:
+          block.position = 's r0xca ' + document.querySelector(
+            `#${blockContainer.children[i].id} div:nth-child(2) input`
+          ).value;
+
+          // velocity
+          block.velocity = 's r0xcb ' + document.querySelector(
+            `#${blockContainer.children[i].id} div:nth-child(3) input`
+          ).value;
+
+          // acceleration
+          block.acceleration = 's r0xcc ' + document.querySelector(
+            `#${blockContainer.children[i].id} div:nth-child(4) input`
+          ).value;
+          
+          // deceleration
+          block.deceleration = 's r0xcd ' + document.querySelector(
+            `#${blockContainer.children[i].id} div:nth-child(4) input`
+          ).value;
+
+          // interval
+          block.interval = document.querySelector(
+            `#${blockContainer.children[i].id} div:nth-child(5) input`
+          ).value;
+
+          data.push(block);
+        }
+        // send data [{}, {}, {}, blocks]
+        socket.emit('blocks', data); 
+      } else {
+        alert('Please create block before run');
+      }
+    });
 
   </script>
 </body>
