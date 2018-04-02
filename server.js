@@ -33,6 +33,7 @@ function handler (req, res) { //create server
 }
 
 var motorResponse = '';
+const countsPerRev = 50000;
 
 const parser = motor.pipe(new Readline({ delimiter: '\r' }))
 parser.on('data', function(data) {
@@ -47,13 +48,20 @@ io.on('connection', function(socket) {
     motor.write(toAscii(data));
   })
   socket.on('blocks', function(data) {
-    init();
-    
-    for (i = 0; i < data.length; i++) {
-      console.log(data[i]);
-    }
+    console.log(editArray(data));
+    run(editArray(data));
   });
 });
+
+function editArray(arr) {
+  for (i = 0; i < arr.length; i++) {
+    if (arr[i].name !== 'init') {
+      arr[i].commands = Object.values(arr[i].parameters);
+      arr[i].commands.push('t 1');
+    }
+  }
+  return arr;
+}
 
 function toAscii(str) {
   var arr =[];
@@ -64,16 +72,74 @@ function toAscii(str) {
   return arr;
 }
 
-function init() {
-  const array = ['s r0x24 0', 's r0x24 31', 's r0xc8 256'];
-  for (i = 0; i < array.length; i++) {
-    doAscii(array, i);
-  }
+function doAscii(command) {
+  return new Promise((resolve, reject) => {
+    setTimeout(function() {
+      motor.write(toAscii(command), function(err) {
+        if (err) {
+          return console.log('Error on write: ', err.message);
+        }
+        console.log(`${command} written`);
+        resolve(true);
+      });
+    }, 50);
+  });
 }
 
-function doAscii(array, i) {
-  setTimeout(function() {
-    motor.write(toAscii(array[i]));
-    console.log(array[i]);
-  }, 1000*i);
+function waitUntilDone() {
+  return new Promise((resolve, reject) => {
+    const handler = function(data) {
+      console.log(data);
+      parser.removeListener('data', handler);
+      if (data === 'v 0') {
+        clearInterval(timer);
+        resolve(true);
+      }
+    }
+    const timer = setInterval(function() {
+      motor.write(toAscii('g r0xa0'), function() {
+        console.log('Completed?');
+      });
+      parser.on('data', handler);
+    }, 50);
+  });
 }
+
+function doBlock(item) {
+  return new Promise((resolve, reject) => {
+    item.commands.reduce((previous, current, index, array) => {
+      return previous
+      .then(() => {
+        if (index === (array.length - 1)) {
+          if (item.wait) {
+            waitUntilDone().then(
+              function() {
+                console.log('THEN===Completed');
+                resolve(true);
+              }
+            );
+          } else {
+            setTimeout(function() {
+              resolve(true);
+            }, 50);
+          }
+          return doAscii(array[index]);
+        } else {
+          return doAscii(array[index]);
+        }
+      });
+    }, Promise.resolve());
+  });
+}
+
+function run(arr) {
+  console.log('================RUN===================')
+  arr.reduce((previous, current, index, array) => {
+    return previous
+      .then(() => {
+        return doBlock(array[index]);
+      })
+  }, Promise.resolve());
+  
+}
+

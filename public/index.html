@@ -70,13 +70,13 @@
     }
 
   </style>
-  <title>Motor Controller</title>
+  <title>Motor</title>
 </head>
 <body>
   <!-- GUI -->
   <div class="card">
     <div class="card-body">
-      <h2 class="text-center mb-3">Motor Controller</h1>
+      <h2 class="text-center mb-3">Motor Controller</h2>
       <form id="command-line">
         <div class="form-group row">
           <label for="command" class="col-sm-4 col-form-label">ASCII Command</label>
@@ -115,15 +115,8 @@
           </div>
           <label class="col-sm-3 col-form-label">10xcounts/sec<sup>2</sup></label>
         </div>
-        <div class="form-group row">
-          <label for="interval" class="col-sm-4 col-form-label">Interval</label>
-          <div class="col-sm-5">
-            <input type="text" id="interval" class="form-control" placeholder="1000">
-          </div>
-          <label class="col-sm-3 col-form-label">sec</label>
-        </div>
         <div class="form-check mb-3 col-sm-4">
-          <input type="checkbox" id="wait-until-done" class="form-check-input" onchange="disableInterval(this)">
+          <input type="checkbox" id="wait-until-done" class="form-check-input">
           <label for="wait-until-done" class="form-check-label">Wait until done</label>
         </div>
         <input type="button" id="create-block" class="btn btn-primary" value="Create"/>
@@ -157,7 +150,6 @@
     const velocityInput = document.getElementById('velocity');
     const accelerationInput = document.getElementById('acceleration');
     const waitUntilDone = document.getElementById('wait-until-done');
-    const intervalInput = document.getElementById('interval');
     const createBlock = document.getElementById('create-block');
     const clearAll = document.getElementById('clear-all');
     const run = document.getElementById('run');
@@ -190,15 +182,6 @@
       }
     }
 
-    //Disable Interval if check wait until done
-    function disableInterval() {
-      if (!intervalInput.disabled) {
-        intervalInput.disabled = true;
-      } else {
-        intervalInput.disabled = false;
-      }
-    }
-
     createBlock.addEventListener('click', function() {
       console.log('creating new block...');
       //find container to input our blocks
@@ -222,11 +205,7 @@
         <label for="a" class="block-parameter-label">A:</label>
         <input type="text" class="block-parameter-input" value="${ accelerationInput.value }">
       </div>
-      <div class="block-parameter-group">
-        <label for="i" class="block-parameter-label">I:</label>
-        
-        <input type="text" class="block-parameter-input" value="${ intervalInput.disabled ? 'done' : intervalInput.value }">
-      </div>
+      <span>${ waitUntilDone.checked ? 'WAIT UNTIL DONE' : '' }</span>
       `;
 
       //append block
@@ -255,37 +234,45 @@
     //send blocks to run on the server
     run.addEventListener('click', function() {
       const data = [];
+      const init = {"name": "init", "commands": ['s r0x24 0', 's r0x24 31', 's r0xc8 256']};
+      data.push(init);
       const blockContainer = document.querySelector('.block-container');
       if (blockContainer.childNodes.length !== 0) {
         for (i = 0; i < blockContainer.children.length; i++) {
           let block = {};
-          // command: 'move'
-          block.command = blockContainer.children[i].id.slice(0,4);
+          // name: 'move'
+          block.name = blockContainer.children[i].id.slice(0,4);
+
+          // id: 'move-#'
+          block.id = blockContainer.children[i].id;
+
+          block.parameters = {};
 
           // position:
-          block.position = 's r0xca ' + document.querySelector(
+          block.parameters.position = 's r0xca ' + document.querySelector(
             `#${blockContainer.children[i].id} div:nth-child(2) input`
           ).value;
 
           // velocity
-          block.velocity = 's r0xcb ' + document.querySelector(
+          block.parameters.velocity = 's r0xcb ' + document.querySelector(
             `#${blockContainer.children[i].id} div:nth-child(3) input`
           ).value;
 
           // acceleration
-          block.acceleration = 's r0xcc ' + document.querySelector(
+          block.parameters.acceleration = 's r0xcc ' + document.querySelector(
             `#${blockContainer.children[i].id} div:nth-child(4) input`
           ).value;
           
           // deceleration
-          block.deceleration = 's r0xcd ' + document.querySelector(
+          block.parameters.deceleration = 's r0xcd ' + document.querySelector(
             `#${blockContainer.children[i].id} div:nth-child(4) input`
           ).value;
 
-          // interval
-          block.interval = document.querySelector(
-            `#${blockContainer.children[i].id} div:nth-child(5) input`
-          ).value;
+          if (document.querySelector(
+            `#${blockContainer.children[i].id} span`
+          ).textContent === 'WAIT UNTIL DONE') {
+            block.wait = true;
+          }
 
           data.push(block);
         }
