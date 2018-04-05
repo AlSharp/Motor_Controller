@@ -33,7 +33,6 @@ function handler (req, res) { //create server
 }
 
 var motorResponse = '';
-const countsPerRev = 50000;
 
 const parser = motor.pipe(new Readline({ delimiter: '\r' }))
 parser.on('data', function(data) {
@@ -47,12 +46,15 @@ io.on('connection', function(socket) {
     console.log('ASCII command recieved!');
     motor.write(toAscii(data));
   })
+
+  // get sequence of blocks (actions)
   socket.on('blocks', function(data) {
     console.log(editArray(data));
     run(editArray(data));
   });
 });
 
+// create array of ascii commands with 't 1' (move!) command at the end
 function editArray(arr) {
   for (i = 0; i < arr.length; i++) {
     if (arr[i].name !== 'init') {
@@ -63,15 +65,18 @@ function editArray(arr) {
   return arr;
 }
 
+// get array of bytes from string
 function toAscii(str) {
   var arr =[];
   for (var i = 0; i < str.length; i++) {
     arr.push(str[i].charCodeAt(0));
   }
+  // push CR
   arr.push(13);
   return arr;
 }
 
+// write array of bytes to serial port
 function doAscii(command) {
   return new Promise((resolve, reject) => {
     setTimeout(function() {
@@ -86,6 +91,8 @@ function doAscii(command) {
   });
 }
 
+// wait until movement finished
+// ask register r0xa0 - if value = 'v 0' then movement completed
 function waitUntilDone() {
   return new Promise((resolve, reject) => {
     const handler = function(data) {
@@ -96,15 +103,20 @@ function waitUntilDone() {
         resolve(true);
       }
     }
+    // iterrogation
     const timer = setInterval(function() {
       motor.write(toAscii('g r0xa0'), function() {
         console.log('Completed?');
       });
       parser.on('data', handler);
-    }, 50);
+    }, 30);
+    // 30ms can be adjustable but cannot be equal to timeouts between commands and blocks
   });
 }
 
+// send array of ASCII commands of one block
+// if block has wait until done property execute waitUntilDone()
+// do timeout between blocks (50ms can be adjustable)
 function doBlock(item) {
   return new Promise((resolve, reject) => {
     item.commands.reduce((previous, current, index, array) => {
@@ -112,18 +124,21 @@ function doBlock(item) {
       .then(() => {
         if (index === (array.length - 1)) {
           if (item.wait) {
-            waitUntilDone().then(
-              function() {
-                console.log('THEN===Completed');
-                resolve(true);
-              }
-            );
+            setTimeout(function() {
+              waitUntilDone().then(
+                function() {
+                  console.log('THEN===Completed');
+                  resolve(true);
+                }
+              );
+            }, 50);
+            return doAscii(array[index]);
           } else {
             setTimeout(function() {
               resolve(true);
             }, 50);
+            return doAscii(array[index]);
           }
-          return doAscii(array[index]);
         } else {
           return doAscii(array[index]);
         }
@@ -132,6 +147,7 @@ function doBlock(item) {
   });
 }
 
+// run, do blocks
 function run(arr) {
   console.log('================RUN===================')
   arr.reduce((previous, current, index, array) => {
